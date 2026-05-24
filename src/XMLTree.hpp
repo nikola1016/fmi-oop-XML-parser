@@ -21,15 +21,17 @@ private:
 
 	void parse_node(std::istream& input, XMLNode* parent);
 
-	char read_a_symbol(std::istream& input, char symbol);//delete maybe useless
+	//char read_a_symbol(std::istream& input, char symbol);//delete maybe useless
 
+	void match_closing_tag(std::istream& input, XMLNode* parent);
+	
 	XMLNode* read_tag_and_attributes(std::istream& input);
 
 	std::string read_word(std::istream& input, char& last_read_symbol);
 
 	std::string read_word_inside_quotes(std::istream& input);
 
-	void read_attributes(std::istream& input, std::vector<std::string>& attributes_names, std::vector<std::string>& attributes_values);
+	void read_attributes(std::istream& input, std::vector<std::string>& attributes_names, std::vector<std::string>& attributes_values, bool& self_closing);
 
 	void skip_whitespaces(std::istream& input, char& last_read_symbol);
 };

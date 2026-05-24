@@ -1,7 +1,25 @@
 #include "XMLTree.hpp"
 
-//remake
-//XMLTree::XMLTree(std::istream& input): root (parse_node(input)) {}
+
+XMLTree::XMLTree(std::istream& input) : root(nullptr) {
+	char symbol;
+
+	while (input.get(symbol)) {
+		if (evaluate_symbol(symbol) == symbol_type::SPACE) {
+			continue;
+		}
+		if (evaluate_symbol(symbol) == symbol_type::LESS_THAN) {
+			break;
+		}
+		throw;// throw exception the file must start with <
+	}
+
+	root = read_tag_and_attributes(input);
+
+	if (root != nullptr && !root->get_self_closing()) {
+		parse_node(input, root);
+	}
+}
 
 void XMLTree::parse_node(std::istream& input, XMLNode* parent) {
 	char symbol;
@@ -14,18 +32,49 @@ void XMLTree::parse_node(std::istream& input, XMLNode* parent) {
 		}
 
 		if (type == symbol_type::LESS_THAN) {
+			if (evaluate_symbol(input.peek()) == symbol_type::SLASH) {
+				input.get(symbol);
+				match_closing_tag(input, parent);
+				return;
+			}
+
 			XMLNode* new_child = read_tag_and_attributes(input);
 
-			//check if next symbol is / if it closes our tag return the recursion
-			parent->add_child(new_child);
-			
+			if (!new_child->get_self_closing()) {
+				parse_node(input, new_child);
+			}
+
+			if (parent != nullptr) {
+				parent->add_child(new_child);
+			}
+
+			continue;
 		}
 
-		//check_for_text_and_add_it_to_the_node
+		if (type == symbol_type::TEXT) {
+			std::string message;
+			message.push_back(symbol); 
 
-		//check for the closing of our node if it is closed return the recursion
+			while (input.get(symbol)) {
+				if (evaluate_symbol(symbol) == symbol_type::LESS_THAN) {
+					break; 
+				}
+				message.push_back(symbol);
+			}
 
-		//make an exception
+			if (parent != nullptr) {
+				parent->set_value(message);
+			}
+
+			if (evaluate_symbol(input.peek()) == symbol_type::SLASH) {
+				input.get(symbol);
+				match_closing_tag(input, parent);
+				return;
+			}
+
+			continue;
+		}
+
 	}
 }
 
@@ -51,33 +100,57 @@ XMLTree::symbol_type XMLTree::evaluate_symbol(char symbol) {
 	return symbol_type::TEXT;
 }
 
+void XMLTree::match_closing_tag(std::istream& input, XMLNode* parent) {
+	char symbol;
+	std::string closing_tag = read_word(input, symbol);
 
+	if (closing_tag.empty()) {
+		throw std::runtime_error("Синтактична грешка: Намерена е празна затваряща скоба '</>'!");
+	}
 
-//maybe add logic to check if the <> ends with /
+	if (evaluate_symbol(symbol) != symbol_type::GREATER_THAN) {
+		throw std::runtime_error("Синтактична грешка: Очакван символ '>' след затварящия таг '" + closing_tag + "'!");
+	}
+
+	if (parent && closing_tag != parent->get_tag()) {
+		throw std::runtime_error("Синтактична грешка: Несъответствие! Отварящият таг е <"
+			+ parent->get_tag() + ">, но затварящият е </" + closing_tag + ">!");
+	}
+}
+
 XMLNode* XMLTree::read_tag_and_attributes(std::istream& input) {
 	char symbol;
 	std::string tag = read_word(input, symbol);
 
 	symbol_type a = evaluate_symbol(symbol);
-	//checks if tag is empty if the <> has ended and if the symbol after the tag is a space
 	if (tag == "") {
-			//throw an exception there is no tag
+		throw std::runtime_error("Синтактична грешка: Намерен е празен таг '<>'!");
+	}
+	if (a == symbol_type::SLASH) {
+		if (evaluate_symbol(input.get()) == symbol_type::GREATER_THAN) {
+			return new XMLNode(tag, {},{},"", true);
+		}
+		else {
+			throw std::runtime_error("Синтактична грешка: Очакван символ '>' веднага след '/' в тага <" + tag + "/>!");
+		}
 	}
 	if (a == symbol_type::GREATER_THAN) {
 		return new XMLNode(tag);
 	}
 	if (a != symbol_type::SPACE) {
-		//throw an exception there is something else other than space after tag
+		throw std::runtime_error("Синтактична грешка: Невалиден символ веднага след името на тага <" + tag + ">!");
 	}
 	
 	std::vector<std::string> attribute_names, attribute_values;
-	read_attributes(input, attribute_names, attribute_values);
+	bool self_closing = false;
+	read_attributes(input, attribute_names, attribute_values, self_closing);
 
-	return new XMLNode(tag, attribute_names, attribute_values);
+	return new XMLNode(tag, attribute_names, attribute_values, "", self_closing);
 }
 
-//maybe add logic to check if the <> ends with /
-void XMLTree::read_attributes(std::istream& input, std::vector<std::string>& attribute_names, std::vector<std::string>& attribute_values) {
+void XMLTree::read_attributes(std::istream& input, std::vector<std::string>& attribute_names, std::vector<std::string>& attribute_values,
+	bool& self_closing) {
+
 	size_t attribute_count = 0;
 	char symbol;
 
@@ -86,6 +159,16 @@ void XMLTree::read_attributes(std::istream& input, std::vector<std::string>& att
 
 		if (a == symbol_type::SPACE) {
 			continue;
+		}
+
+		if (a == symbol_type::SLASH) {
+			if (evaluate_symbol(input.get()) == symbol_type::GREATER_THAN) {
+				self_closing = true;
+				return ;
+			}
+			else {
+				throw std::runtime_error("Синтактична грешка: Очакван символ '>' след '/' при затваряне на атрибутите!");
+			}
 		}
 
 		if (a == symbol_type::GREATER_THAN) {
@@ -100,20 +183,20 @@ void XMLTree::read_attributes(std::istream& input, std::vector<std::string>& att
 			skip_whitespaces(input, symbol);
 			a = evaluate_symbol(symbol);
 			if (a != symbol_type::EQUALS) {
-				//return exception = was expected after attribute name, but got a different special symbol instead
+				throw std::runtime_error("Синтактична грешка: Очакван символ '=' след името на атрибута '" + current_name + "'!");
 			}
 
 			skip_whitespaces(input, symbol);
 			a = evaluate_symbol(symbol);
 			if (a != symbol_type::QUOTE) {
-				//return exception " was expected after = , but got a different special symbol instead
+				throw std::runtime_error("Синтактична грешка: Очаквана отваряща кавичка '\"' за стойността на атрибута '" + current_name + "'!");
 			}
 			attribute_names.push_back(current_name);
 			attribute_values.push_back(read_word_inside_quotes(input));
 			continue;
 		}
 		
-		//return exception unexpected special symbol
+		throw std::runtime_error("Синтактична грешка: Неочакван специален символ вътре в списъка с атрибути!");
 	}
 }
 
@@ -140,7 +223,7 @@ std::string XMLTree::read_word_inside_quotes(std::istream& input) {
 		}
 
 		if (a == symbol_type::LESS_THAN) {
-			// throw exception < is forbidden inside quotes
+			throw;// throw exception < is forbidden inside quotes
 		}
 
 		word.push_back(symbol);
