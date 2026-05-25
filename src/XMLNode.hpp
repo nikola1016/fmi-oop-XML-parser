@@ -2,6 +2,7 @@
 #include<iostream>
 #include<string>
 #include<vector>
+#include<map>
 
 class XMLNode {
 public:
@@ -19,6 +20,10 @@ public:
 
 	XMLNode& add_child(XMLNode* child);
 
+	bool has_attribute_names(std::string name) const;
+
+	std::string get_attribute_value(std::string attribute_name, bool& found_attribute) const;
+	
 	std::string get_tag() const;
 	
 	bool get_self_closing() const;
@@ -26,6 +31,10 @@ public:
 	void set_value(std::string a);
 
 	void set_self_closing(bool a);
+
+	void print(unsigned int tab_size = 2, unsigned int tabs = 0, std::ostream& out = std::cout) const;
+
+	void make_unique_ids(std::map<std::string, int>& id_count);
 
 	~XMLNode();
 private:
@@ -35,4 +44,6 @@ private:
 	bool self_closing;
 
 	void swap_Nodes (XMLNode& other);
+
+	void print_tag(std::ostream& out) const;
 };

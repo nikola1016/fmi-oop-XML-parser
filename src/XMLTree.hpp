@@ -1,10 +1,13 @@
 #pragma once
 
 #include "XMLNode.hpp"
+#include <map>
 
 class XMLTree {
 public:
 	XMLTree(std::istream& input);
+
+	void print(unsigned int tab_size = 2, unsigned int tabs = 0, std::ostream& out = std::cout) const;
 private:
 	XMLNode* root;
 	enum class symbol_type {
@@ -19,7 +22,7 @@ private:
 
 	symbol_type evaluate_symbol(char symbol);
 
-	void parse_node(std::istream& input, XMLNode* parent);
+	void parse_node(std::istream& input, XMLNode* parent, std::map<std::string, int>& id_count);
 
 	//char read_a_symbol(std::istream& input, char symbol);//delete maybe useless
 

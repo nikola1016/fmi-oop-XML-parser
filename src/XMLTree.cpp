@@ -1,6 +1,5 @@
 #include "XMLTree.hpp"
 
-
 XMLTree::XMLTree(std::istream& input) : root(nullptr) {
 	char symbol;
 
@@ -15,13 +14,35 @@ XMLTree::XMLTree(std::istream& input) : root(nullptr) {
 	}
 
 	root = read_tag_and_attributes(input);
+	std::map<std::string, int> id_count;
 
 	if (root != nullptr && !root->get_self_closing()) {
-		parse_node(input, root);
+		parse_node(input, root, id_count);
 	}
+
+
+	if (root->has_attribute_names("id")) {
+		bool found;
+		id_count[root->get_attribute_value("id", found)]++;
+	}
+	
+
+	for (auto& pair : id_count) {
+		if (pair.second > 1) {
+			pair.second++;
+		}
+	}
+
+	
+
+	root->make_unique_ids(id_count);
 }
 
-void XMLTree::parse_node(std::istream& input, XMLNode* parent) {
+void XMLTree::print(unsigned int tab_size, unsigned int tabs, std::ostream& out) const {
+	root->print(tab_size, tabs, out);
+}
+
+void XMLTree::parse_node(std::istream& input, XMLNode* parent, std::map<std::string, int>& id_count) {
 	char symbol;
 
 	while (input.get(symbol)) {
@@ -39,9 +60,13 @@ void XMLTree::parse_node(std::istream& input, XMLNode* parent) {
 			}
 
 			XMLNode* new_child = read_tag_and_attributes(input);
+			if (new_child->has_attribute_names("id")) {
+				bool found;
+				id_count[new_child->get_attribute_value("id", found)]++;
+			}
 
 			if (!new_child->get_self_closing()) {
-				parse_node(input, new_child);
+				parse_node(input, new_child, id_count);
 			}
 
 			if (parent != nullptr) {
@@ -180,8 +205,13 @@ void XMLTree::read_attributes(std::istream& input, std::vector<std::string>& att
 			current_name.push_back(symbol);
 			current_name.append(read_word(input, symbol));
 
-			skip_whitespaces(input, symbol);
 			a = evaluate_symbol(symbol);
+			if (a == symbol_type::SPACE) {
+				skip_whitespaces(input, symbol);
+				a = evaluate_symbol(symbol);
+				
+			}
+
 			if (a != symbol_type::EQUALS) {
 				throw std::runtime_error("Синтактична грешка: Очакван символ '=' след името на атрибута '" + current_name + "'!");
 			}

@@ -46,6 +46,27 @@ XMLNode& XMLNode::add_child(XMLNode* child) {
 	return *this;
 }
 
+bool XMLNode::has_attribute_names(std::string name) const {
+	for (std::string attribute : attribute_names) {
+		if (attribute == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+std::string XMLNode::get_attribute_value(std::string attribute_name, bool& found_attribute) const {
+	int size = attribute_name.size();
+	for (int i = 0; i < size; i++) {
+		if (attribute_name == attribute_names[i]) {
+			found_attribute = true;
+			return attribute_values[i];
+		}
+	}
+	found_attribute = false;
+	return "";
+}
+
 std::string XMLNode::get_tag() const {
 	return tag;
 }
@@ -62,6 +83,86 @@ void XMLNode::set_self_closing(bool a) {
 	self_closing = a;
 }
 
+void XMLNode::print(unsigned int tab_size, unsigned int tabs, std::ostream& out) const {
+	std::string indent(tabs * tab_size, ' ');
+
+	out << indent;
+	print_tag(out);
+	out << '\n';
+
+	if (self_closing == true) {
+		return;
+	}
+	
+	for (XMLNode* child : children) {
+		child->print(tab_size, tabs + 1, out);
+	}
+
+	if (value != "") {
+		out << indent << std::string(tab_size, ' ');
+		out << value;
+		out << '\n';
+	}
+
+	out << indent;
+	out << "</" << tag << ">";
+	out << '\n';
+
+	//check if its a self closing tag
+	//if it is print and return
+	//if its not print and open a for loop loping through all children and returning the recursion for each increasing the tabs
+	//if we have a value print it but with one tab more
+	//print end tag
+}
+
+void XMLNode::make_unique_ids(std::map<std::string, int>& id_count) {
+	bool has_id_attribute = false;
+	size_t id_index = 0;
+
+	for (size_t i = 0; i < attribute_names.size(); ++i) {
+		if (attribute_names[i] == "id") {
+			has_id_attribute = true;
+			id_index = i;
+			break;
+		}
+	}
+
+	if (has_id_attribute) {
+		std::string& current_id = attribute_values[id_index];
+
+		auto it = id_count.find(current_id);
+		if (it != id_count.end()) {
+			int value_count = it->second;
+
+			if (value_count > 1) {
+				int suffix = value_count - 1;
+				it->second--; 
+
+				current_id.append("_").append(std::to_string(suffix));
+			}
+		}
+	} else {
+		attribute_names.insert(attribute_names.begin(), "id");
+		int failed_attempts = 1;
+		std::string id_value;
+		while (true) {
+			id_value = "auto_gen_id_";
+			id_value.append(std::to_string(id_count.size() + failed_attempts++));
+			if (id_count.find(id_value) == id_count.end()) {
+				break;
+			}
+		}
+		id_count[id_value] = 1;
+		attribute_values.insert(attribute_values.begin(), id_value);
+	}
+
+	for (XMLNode* child : children) {
+		if (child != nullptr) {
+			child->make_unique_ids(id_count);
+		}
+	}
+}
+
 XMLNode::~XMLNode() {
 	for (int i = 0; i < children.size(); i++) {
 		delete children[i];
@@ -76,3 +177,15 @@ void XMLNode::swap_Nodes(XMLNode& other) {
 	std::swap(children, other.children);
 	std::swap(self_closing, other.self_closing);
 }
+
+void XMLNode::print_tag(std::ostream& out) const {
+	out << '<' << tag;
+	for (int i = 0; i < attribute_names.size(); i++) {
+		out << ' ' << attribute_names[i] << " = \"" << attribute_values[i] << "\"";
+	}
+	if (self_closing == true) {
+		out << '/';
+	}
+	out << '>';
+}
+
