@@ -5,9 +5,19 @@
 
 class XMLTree {
 public:
+	XMLTree();
+
 	XMLTree(std::istream& input);
 
+	XMLTree(const XMLTree& other);
+
+	XMLTree& operator=(const XMLTree& other);
+
 	void print(unsigned int tab_size = 2, unsigned int tabs = 0, std::ostream& out = std::cout) const;
+
+	XMLNode* find_Node(std::string id);
+
+	~XMLTree();
 private:
 	XMLNode* root;
 	enum class symbol_type {

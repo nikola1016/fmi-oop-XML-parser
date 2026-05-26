@@ -36,6 +36,12 @@ public:
 
 	void make_unique_ids(std::map<std::string, int>& id_count);
 
+	XMLNode* find_child_by_id(const std::string& target_id);
+
+	bool delete_attribute(const std::string& key);
+
+	bool set_attribute(const std::string& key, const std::string& value);
+
 	~XMLNode();
 private:
 	std::vector<XMLNode*> children;

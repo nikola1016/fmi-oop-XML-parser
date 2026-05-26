@@ -163,6 +163,52 @@ void XMLNode::make_unique_ids(std::map<std::string, int>& id_count) {
 	}
 }
 
+XMLNode* XMLNode::find_child_by_id(const std::string& target_id) {
+	for (int i = 0; i < attribute_values.size(); i++) {
+		if (attribute_names[i] == "id") {
+			if (attribute_values[i] == target_id) {
+				return this;
+			}
+			break;
+		}
+	}
+
+	for (int i = 0; i < children.size(); i++) {
+		if (children[i] != nullptr) {
+			XMLNode* found = children[i]->find_child_by_id(target_id);
+			if (found != nullptr) {
+				return found; 
+			}
+		}
+	}
+	return nullptr;
+}
+
+bool XMLNode::delete_attribute(const std::string& key) {
+	size_t size = attribute_names.size();
+	for (int i = 0; i < size; i++) {
+		if (attribute_names[i] == key) {
+			attribute_names.erase(attribute_names.begin() + i);
+			attribute_values.erase(attribute_values.begin() + i);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool XMLNode::set_attribute(const std::string& key, const std::string& value) {
+	size_t size = attribute_names.size();
+	for (int i = 0; i < size; i++) {
+		if (attribute_names[i] == key) {
+			attribute_values[i] = value;
+			return true;
+		}
+	}
+	attribute_names.push_back(key);
+	attribute_values.push_back(value);
+	return false;
+}
+
 XMLNode::~XMLNode() {
 	for (int i = 0; i < children.size(); i++) {
 		delete children[i];

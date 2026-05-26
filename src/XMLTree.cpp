@@ -1,5 +1,7 @@
 #include "XMLTree.hpp"
 
+XMLTree::XMLTree(): root(nullptr){}
+
 XMLTree::XMLTree(std::istream& input) : root(nullptr) {
 	char symbol;
 
@@ -20,26 +22,49 @@ XMLTree::XMLTree(std::istream& input) : root(nullptr) {
 		parse_node(input, root, id_count);
 	}
 
-
 	if (root->has_attribute_names("id")) {
 		bool found;
 		id_count[root->get_attribute_value("id", found)]++;
 	}
 	
-
 	for (auto& pair : id_count) {
 		if (pair.second > 1) {
 			pair.second++;
 		}
 	}
 
-	
-
 	root->make_unique_ids(id_count);
 }
 
+XMLTree::XMLTree(const XMLTree& other): root(nullptr) {
+	if (other.root != nullptr) {
+		this->root = new XMLNode(*(other.root));
+	}
+}
+
+XMLTree& XMLTree::operator=(const XMLTree& other) {
+	if (this != &other) {
+		XMLTree temp(other);
+		std::swap(this->root, temp.root);
+	}
+	return *this;
+}
+
 void XMLTree::print(unsigned int tab_size, unsigned int tabs, std::ostream& out) const {
-	root->print(tab_size, tabs, out);
+	if (root != nullptr) {
+		root->print(tab_size, tabs, out);
+	}
+	else {
+		std::cout << "No XML tree saved\n\n";
+	}
+}
+
+XMLNode* XMLTree::find_Node(std::string id) {
+	return root->find_child_by_id(id);
+}
+
+XMLTree::~XMLTree() {
+	delete root;
 }
 
 void XMLTree::parse_node(std::istream& input, XMLNode* parent, std::map<std::string, int>& id_count) {
