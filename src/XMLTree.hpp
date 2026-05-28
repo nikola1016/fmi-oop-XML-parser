@@ -4,15 +4,6 @@
 #include <map>
 #include <algorithm>
 
-struct XPathStep {
-	std::string tag_name;
-	int index = -1;
-	std::string extract_attribute;
-	std::string condition_child_tag;
-	std::string condition_value;
-	bool has_condition = false;
-};
-
 class XMLTree {
 public:
 	XMLTree();
@@ -28,6 +19,9 @@ public:
 	std::string get_next_available_id();
 
 	XMLNode* find_Node(std::string id);
+
+	void execute_xpath(std::vector<XPathStep> xpath_steps, 
+										 std::vector<XMLNode*>& candidates);
 
 	~XMLTree();
 private:

@@ -4,6 +4,15 @@
 #include<vector>
 #include<map>
 
+struct XPathStep {
+	std::string tag_name;
+	int index = -1;
+	std::string extract_attribute;
+	std::string condition_child_tag;
+	std::string condition_value;
+	bool has_condition = false;
+};
+
 class XMLNode {
 public:
 
@@ -48,6 +57,9 @@ public:
 
 	bool set_attribute(const std::string& key, const std::string& value);
 
+	void execute_xpath(const std::vector<XPathStep>& xpath_steps,
+		std::vector<XMLNode*>& candidates) const;
+
 	~XMLNode();
 private:
 	std::vector<XMLNode*> children;
@@ -58,4 +70,16 @@ private:
 	void swap_Nodes (XMLNode& other);
 
 	void print_tag(std::ostream& out) const;
+
+	void get_children_with_wanted_tag(std::vector<XMLNode*>& candidates, const std::string& tag) const;
+
+	void handle_xpath_indexes(std::vector<XMLNode*>& candidates, size_t index) const;
+	
+	void filter_by_wanted_attr_name(std::vector<XMLNode*>& candidates, 
+																	const std::string& wanted_attribute_name, 
+																	const std::string& wanted_attribute_value) const;
+
+	void filter_by_wanted_child_value(std::vector<XMLNode*>& candidates,
+																	  const std::string& wanted_child_tag,
+																	  const std::string& wanted_value) const;
 };

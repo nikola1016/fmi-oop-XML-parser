@@ -40,6 +40,8 @@ private:
 
 	bool read_brackets(const std::string& xpath_message, XPathStep& new_xpathstep) const;
 
+	void print_xpath_result(const XPathStep& last_step, const std::vector<XMLNode*>& candidates) const;
+
 	bool find_interval(const std::string& arg) const;
 
 	bool is_pure_number(const std::string& str) const;

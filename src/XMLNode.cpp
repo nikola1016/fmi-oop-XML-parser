@@ -221,6 +221,49 @@ bool XMLNode::set_attribute(const std::string& key, const std::string& value) {
 	return false;
 }
 
+void XMLNode::execute_xpath(const std::vector<XPathStep>& xpath_steps,
+	std::vector<XMLNode*>& candidates) const{
+	
+	size_t xpath_steps_size = xpath_steps.size();
+	
+	for (size_t i = 0; i < xpath_steps_size; i++) {
+		//проверка дали [@somthing] стои някъде освен в края на xpath заявката
+		if (!xpath_steps[i].extract_attribute.empty() &&
+				!xpath_steps[i].has_condition && i != xpath_steps_size - 1) {
+			std::cout << "Error: [@something] must be the last variable in the xpath!\n\n";
+			candidates.clear();
+			return;
+		}//не се притеснявам за smth[@something] повече
+		 //на последна позиция съм или взимам tag[]/
+		if (i == 0 && candidates.size() == 1 && candidates[0]->tag == xpath_steps[i].tag_name) {}
+		else {
+			get_children_with_wanted_tag(candidates, xpath_steps[i].tag_name);
+		}
+		//ако няма деца прекратяваме цикъла
+		if (candidates.empty()) {
+			return;
+		}
+		//оправям се ако имам [index]
+		if (xpath_steps[i].index != -1) {
+			handle_xpath_indexes(candidates, xpath_steps[i].index);
+		}
+		if (xpath_steps[i].has_condition) {
+			//оправяме случая с something[@id="idk"]
+			if (!xpath_steps[i].extract_attribute.empty()) {
+				filter_by_wanted_attr_name(candidates, xpath_steps[i].extract_attribute, xpath_steps[i].condition_value);
+			}
+			//оправяме случая с something[idk1="idk2"]
+			else {
+				filter_by_wanted_child_value(candidates, xpath_steps[i].condition_child_tag, xpath_steps[i].condition_value);
+			}
+		}
+		//ако няма деца прекратяваме цикъла
+		if (candidates.empty()) {
+			return;
+		}
+	}
+}
+
 XMLNode::~XMLNode() {
 	for (int i = 0; i < children.size(); i++) {
 		delete children[i];
@@ -247,3 +290,63 @@ void XMLNode::print_tag(std::ostream& out) const {
 	out << '>';
 }
 
+void XMLNode::get_children_with_wanted_tag(std::vector<XMLNode*>& candidates, const std::string& tag) const {
+	size_t initial_candidate_size = candidates.size();
+	for (size_t i = 0; i < initial_candidate_size; i++) {
+		for (size_t j = 0; j < candidates[0]->children.size(); j++) {
+			if (candidates[0]->children[j] != nullptr) {
+				if (candidates[0]->children[j]->tag == tag) {
+					candidates.push_back(candidates[0]->children[j]);
+				}
+			}
+		}
+		candidates.erase(candidates.begin());
+	}
+}
+
+void XMLNode::handle_xpath_indexes(std::vector<XMLNode*>& candidates, size_t index) const {
+	if (index < candidates.size()) {
+		XMLNode* target = candidates[index];
+		candidates.clear();                
+		candidates.push_back(target);    
+	}
+	else {
+		candidates.clear();                  
+	}
+}
+
+void XMLNode::filter_by_wanted_attr_name(std::vector<XMLNode*>& candidates,
+																				 const std::string& wanted_attribute_name,
+																				 const std::string& wanted_attribute_value) const {
+
+	for (size_t i = 0; i < candidates.size(); i++) {
+		bool found_attribute;
+		if (candidates[i]->get_attribute_value(wanted_attribute_name, found_attribute) == wanted_attribute_value) {
+			continue;
+		}
+		candidates.erase(candidates.begin() + i);
+		i--;
+	}
+}
+
+void XMLNode::filter_by_wanted_child_value(std::vector<XMLNode*>& candidates,
+																					 const std::string& wanted_child_tag,
+																					 const std::string& wanted_value) const {
+	bool found_wanted_child = false;
+	for (size_t i = 0; i < candidates.size(); i++) {
+		for (size_t j = 0; j < candidates[i]->children.size(); j++) {
+			if (candidates[i]->children[j] != nullptr) {
+				if (candidates[i]->children[j]->tag == wanted_child_tag &&
+					candidates[i]->children[j]->value == wanted_value) {
+					found_wanted_child = true;
+					break;
+				}
+			}
+		}
+		if (!found_wanted_child) {
+			candidates.erase(candidates.begin() + i);
+			i--;
+		}
+		found_wanted_child = false;
+	}
+}

@@ -106,6 +106,13 @@ XMLNode* XMLTree::find_Node(std::string id) {
 	return nullptr;
 }
 
+void XMLTree::execute_xpath(std::vector<XPathStep> xpath_steps, 
+														std::vector<XMLNode*>& candidates) {
+	candidates.push_back(root);
+	root->execute_xpath(xpath_steps, candidates);
+	
+}
+
 XMLTree::~XMLTree() {
 	delete root;
 }
@@ -348,18 +355,3 @@ bool XMLTree::is_pure_number(const std::string& str) const{
 	}
 	return true;
 }
-
-/*redo
-char XMLTree::read_a_symbol(std::istream& input, char symbol) {
-	while (!input.eof()) {
-		char character;
-		input.get(character);
-		if (character == symbol) {
-			return true;
-		}
-		if (!(character >= 0 && character <= 32)) {
-			return false;
-		}
-	}
-	return false;
-}*/

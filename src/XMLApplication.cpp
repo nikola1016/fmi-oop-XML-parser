@@ -37,18 +37,18 @@ void XMLApplication::process_command(std::string& command_line) {
 
 	if (action == "help") {
 		std::cout << "\nAvailable commands:\n"
-			<< "ready  open <file>       - Open and parse an XML file\n"
-			<< "ready  close             - Close the current file\n"
-			<< "ready  save              - Save changes to the current file\n"
-			<< "ready  saveas <file>     - Save the tree to a new file\n"
-			<< "ready  print             - Display the formatted XML tree\n"
-			<< "ready  select <id> <key> - Get attribute value by ID and key\n"
-			<< "ready  set <id> <key> <val> - Set/Modify attribute value\n"
-			<< "ready  delete <id> <key> - Delete an attribute from an element\n"
-			<< "ready  text <id>         - Get text content of an element\n"
-			<< "ready  children <id>       - Lists the attributes of all nested elements (children) for a given ID\n"
-			<< "ready  child <id> <n>      - Accesses and displays the n-th child of the element with the given ID\n"
-			<< "ready  newchild <parent_id> <tag_name> - Add a new empty child to an element\n"
+			<< "  open <file>       - Open and parse an XML file\n"
+			<< "  close             - Close the current file\n"
+			<< "  save              - Save changes to the current file\n"
+			<< "  saveas <file>     - Save the tree to a new file\n"
+			<< "  print             - Display the formatted XML tree\n"
+			<< "  select <id> <key> - Get attribute value by ID and key\n"
+			<< "  set <id> <key> <val> - Set/Modify attribute value\n"
+			<< "  delete <id> <key> - Delete an attribute from an element\n"
+			<< "  text <id>         - Get text content of an element\n"
+			<< "  children <id>     - Lists the attributes of all nested elements (children) for a given ID\n"
+			<< "  child <id> <n>    - Accesses and displays the n-th child of the element with the given ID\n"
+			<< "  newchild <parent_id> <tag_name> - Add a new empty child to an element\n"
 			<< "  xpath <expr>      - Execute a simple XPath 2.0 query\n"
 			<< "  exit              - Exit the application\n\n";
 	}
@@ -95,6 +95,10 @@ void XMLApplication::process_command(std::string& command_line) {
 	}
 	else if (action == "child") {
 		print_child_by_id(args);
+		return;
+	}
+	else if (action == "xpath") {
+		xpath_parser(args);
 		return;
 	}
 	else if (action == "print") {
@@ -540,7 +544,15 @@ void XMLApplication::xpath_parser(const std::vector<std::string>& args)const {
 		return;
 	}
 
-	//to be continued....................
+	std::vector<XMLNode*> candidates;
+	current_tree->execute_xpath(xpath_steps, candidates);
+
+	if (candidates.empty()) {
+		std::cout << "No matches found.\n";
+		return;
+	}
+
+	print_xpath_result(xpath_steps.back(), candidates);
 }
 
 std::vector<XPathStep> XMLApplication::convert_to_xpathstep(const std::string& xpath_message) const {
@@ -645,6 +657,35 @@ bool XMLApplication::read_brackets(const std::string& xpath_message, XPathStep& 
 	}
 
 	return false;
+}
+
+void XMLApplication::print_xpath_result(const XPathStep& last_step, const std::vector<XMLNode*>& candidates) const {
+	if (!last_step.extract_attribute.empty() && !last_step.has_condition) {
+		std::cout << "[";
+		bool first = true;
+		for (size_t i = 0; i < candidates.size(); i++) {
+			bool found;
+			std::string attr_val = candidates[i]->get_attribute_value(last_step.extract_attribute, found);
+			if (found) {
+				if (!first) {
+					std::cout << ", " << "\"" << attr_val << "\"";
+				}
+				else {
+					first = false;
+					std::cout << "\"" << attr_val << "\"";
+				}
+			}
+		}
+		std::cout << "]\n\n";
+	}
+	else {
+		std::cout << "[";
+		for (size_t i = 0; i < candidates.size(); i++) {
+			std::cout << "\"" << candidates[i]->get_text() << "\"";
+			if (i != candidates.size() - 1) std::cout << ", ";
+		}
+		std::cout << "]\n\n";
+	}
 }
 
 bool XMLApplication::find_interval(const std::string& arg) const {
