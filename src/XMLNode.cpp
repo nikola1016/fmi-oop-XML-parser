@@ -46,6 +46,14 @@ XMLNode& XMLNode::add_child(XMLNode* child) {
 	return *this;
 }
 
+const std::vector<XMLNode*>& XMLNode::get_children() const {
+	return children;
+}
+
+const std::vector<std::string>& XMLNode::get_attribute_names() const {
+	return attribute_names;
+}
+
 bool XMLNode::has_attribute_names(std::string name) const {
 	for (std::string attribute : attribute_names) {
 		if (attribute == name) {
@@ -53,6 +61,10 @@ bool XMLNode::has_attribute_names(std::string name) const {
 		}
 	}
 	return false;
+}
+
+std::string XMLNode::get_text() const {
+	return value;
 }
 
 std::string XMLNode::get_attribute_value(std::string attribute_name, bool& found_attribute) const {
@@ -85,10 +97,10 @@ void XMLNode::set_self_closing(bool a) {
 
 void XMLNode::print(unsigned int tab_size, unsigned int tabs, std::ostream& out) const {
 	std::string indent(tabs * tab_size, ' ');
-
+	
+	out << '\n';
 	out << indent;
 	print_tag(out);
-	out << '\n';
 
 	if (self_closing == true) {
 		return;
@@ -98,15 +110,15 @@ void XMLNode::print(unsigned int tab_size, unsigned int tabs, std::ostream& out)
 		child->print(tab_size, tabs + 1, out);
 	}
 
-	if (value != "") {
-		out << indent << std::string(tab_size, ' ');
-		out << value;
-		out << '\n';
+	if (!children.empty()) {
+		out << '\n' << indent << "</" << tag << ">";
 	}
-
-	out << indent;
-	out << "</" << tag << ">";
-	out << '\n';
+	else {
+		if (!value.empty()) {
+			out << value; 
+		}
+		out << "</" << tag << ">"; 
+	}
 
 	//check if its a self closing tag
 	//if it is print and return

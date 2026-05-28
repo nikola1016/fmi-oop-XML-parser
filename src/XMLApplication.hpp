@@ -22,5 +22,25 @@ private:
 
 	void set_attribute_value(const std::vector<std::string>& args);
 
+	void delete_attribute(const std::vector<std::string>& args);
+	
+	void get_text(const std::vector<std::string>& args) const;
+
+	void add_new_child(const std::vector<std::string>& args);
+
+	void children_of_id(const std::vector<std::string>& args) const;
+
+	void print_child_by_id(const std::vector<std::string>& args) const;
+
 	void print_file(const std::string& filename) const;
+
+	void xpath_parser(const std::vector<std::string>& args) const;
+
+	std::vector<XPathStep> convert_to_xpathstep(const std::string& xpath_message) const;
+
+	bool read_brackets(const std::string& xpath_message, XPathStep& new_xpathstep) const;
+
+	bool find_interval(const std::string& arg) const;
+
+	bool is_pure_number(const std::string& str) const;
 };

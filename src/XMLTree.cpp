@@ -59,8 +59,51 @@ void XMLTree::print(unsigned int tab_size, unsigned int tabs, std::ostream& out)
 	}
 }
 
+std::string XMLTree::get_next_available_id() {
+	std::vector<int> taken_numbers;
+
+	collect_autogen_numbers(root, taken_numbers);
+
+	std::sort(taken_numbers.begin(), taken_numbers.end());
+
+	int next_id_num = 0;
+	for (int num : taken_numbers) {
+		if (num == next_id_num) {
+			next_id_num++;
+		}
+		else if (num > next_id_num) {
+			break;
+		}
+	}
+
+	return "auto_gen_id_" + std::to_string(next_id_num);
+}
+
+void XMLTree::collect_autogen_numbers(XMLNode* current, std::vector<int>& taken_numbers) const{
+	if (current == nullptr) return;
+
+	bool has_id = false;
+	std::string current_id = current->get_attribute_value("id", has_id);
+
+	std::string prefix = "auto_gen_id_";
+	if (has_id && current_id.rfind(prefix, 0) == 0) {
+		std::string num_part = current_id.substr(prefix.length());
+
+		if (is_pure_number(num_part)) {
+			taken_numbers.push_back(std::stoi(num_part));
+		}
+	}
+
+	for (XMLNode* child : current->get_children()) {
+		collect_autogen_numbers(child, taken_numbers);
+	}
+}
+
 XMLNode* XMLTree::find_Node(std::string id) {
-	return root->find_child_by_id(id);
+	if (root != nullptr) {
+		return root->find_child_by_id(id);
+	}
+	return nullptr;
 }
 
 XMLTree::~XMLTree() {
@@ -293,6 +336,17 @@ void XMLTree::skip_whitespaces(std::istream& input, char& last_read_symbol) {
 			return ;
 		}
 	}
+}
+
+bool XMLTree::is_pure_number(const std::string& str) const{
+	if (str.empty()) return false;
+
+	for (char symbol : str) {
+		if (symbol < '0' || symbol > '9') {
+			return false;
+		}
+	}
+	return true;
 }
 
 /*redo

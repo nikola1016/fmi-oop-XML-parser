@@ -2,6 +2,16 @@
 
 #include "XMLNode.hpp"
 #include <map>
+#include <algorithm>
+
+struct XPathStep {
+	std::string tag_name;
+	int index = -1;
+	std::string extract_attribute;
+	std::string condition_child_tag;
+	std::string condition_value;
+	bool has_condition = false;
+};
 
 class XMLTree {
 public:
@@ -14,6 +24,8 @@ public:
 	XMLTree& operator=(const XMLTree& other);
 
 	void print(unsigned int tab_size = 2, unsigned int tabs = 0, std::ostream& out = std::cout) const;
+
+	std::string get_next_available_id();
 
 	XMLNode* find_Node(std::string id);
 
@@ -29,6 +41,8 @@ private:
 		TEXT,
 		SPACE
 	};
+
+	void collect_autogen_numbers(XMLNode* current, std::vector<int>& taken_numbers) const;
 
 	symbol_type evaluate_symbol(char symbol);
 
@@ -47,4 +61,6 @@ private:
 	void read_attributes(std::istream& input, std::vector<std::string>& attributes_names, std::vector<std::string>& attributes_values, bool& self_closing);
 
 	void skip_whitespaces(std::istream& input, char& last_read_symbol);
+
+	bool is_pure_number(const std::string& str) const;
 };

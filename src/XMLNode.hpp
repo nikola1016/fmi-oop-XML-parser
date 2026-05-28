@@ -22,6 +22,12 @@ public:
 
 	bool has_attribute_names(std::string name) const;
 
+	const std::vector<XMLNode*>& get_children() const;
+
+	const std::vector<std::string>& get_attribute_names() const;
+
+	std::string get_text() const;
+
 	std::string get_attribute_value(std::string attribute_name, bool& found_attribute) const;
 	
 	std::string get_tag() const;
